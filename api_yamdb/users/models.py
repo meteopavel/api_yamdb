@@ -31,6 +31,7 @@ class MyUser(AbstractUser):
     role = models.CharField('Роль', max_length=20, blank=True)
     bio = models.TextField('Биография', blank=True)
     email = models.EmailField('Электронная почта', unique=True)
+    confirmation_code = models.CharField('Код подтверждения', blank=True)
 
     @property
     def is_admin(self):
