@@ -9,6 +9,7 @@ class CategorySerializer(serializers.ModelSerializer):
             'name',
             'slug'
         ]
+        lookup_field = 'slug'
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -18,11 +19,19 @@ class GenreSerializer(serializers.ModelSerializer):
             'name',
             'slug'
         ]
+        lookup_field = 'slug'
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
-    genre = GenreSerializer(many=True)
+    genre = serializers.SlugRelatedField(
+        slug_field='slug',
+        many=True,
+        queryset=Genre.objects.all()
+    )
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all()
+    )
 
     class Meta:
         model = Title
@@ -34,3 +43,19 @@ class TitleSerializer(serializers.ModelSerializer):
             'genre',
             'category'
         ]
+
+
+class ReadOnlyTitleSerializer(serializers.ModelSerializer):
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
+
+    class Meta:
+        model = Title
+        fields = (
+            'id',
+            'name',
+            'year',
+            'description',
+            'genre',
+            'category'
+        )
