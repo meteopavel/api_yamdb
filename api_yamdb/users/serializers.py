@@ -1,5 +1,6 @@
 from rest_framework import serializers
-
+from django.shortcuts import get_object_or_404
+from rest_framework_simplejwt.tokens import AccessToken
 from users.models import MyUser
 
 
@@ -17,15 +18,12 @@ class SignUpSerializer(serializers.ModelSerializer):
     Сериализатор для регистрации новых пользователей.
 
     Поля:
-    - username: Имя пользователя (соответствует username в модели).
-    - email: Адрес электронной почты (соответствует email в модели).
+    - username: Имя пользователя.
+    - email: Адрес электронной почты.
 
     Валидация:
     - Поле username не должно быть равным 'me'.
     - Поля username и email должны быть уникальными.
-
-    Параметры:
-    - max_length: Максимальная длина для полей 'username' и 'email'.
     """
 
     username = serializers.RegexField(
@@ -77,3 +75,9 @@ class TokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(
         required=True
     )
+
+    def validate(self, data):
+        user = get_object_or_404(MyUser, username=data.get('username'))
+        if user.confirmation_code != data.get('confirmation_code'):
+            raise serializers.ValidationError('Не верный confirmation_code')
+        return {'access': str(AccessToken.for_user(user))}
