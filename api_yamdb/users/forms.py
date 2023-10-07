@@ -1,8 +1,13 @@
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 
 from users.models import MyUser
+from users.serializers import SignUpSerializer
 
 
 def get_generated_confirmation_code():
@@ -33,9 +38,9 @@ class SignupView(APIView):
 
     def post(self, request):
         """Метод POST."""
-        serializer = SignupSerializer(data=request.data)
-        if User.objects.filter(username=request.data.get('username'),
-                               email=request.data.get('email')).exists():
+        serializer = SignUpSerializer(data=request.data)
+        if MyUser.objects.filter(username=request.data.get('username'),
+                                 email=request.data.get('email')).exists():
             send_confirmation_code(request)
             return Response(request.data, status=status.HTTP_200_OK)
         serializer.is_valid(raise_exception=True)

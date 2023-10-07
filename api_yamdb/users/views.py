@@ -1,6 +1,6 @@
 
 from api.permissions import IsAdminFullAccess
-from api.serializers import SignUpSerializer, TokenSerializer, UserSerializer
+from users.serializers import SignUpSerializer, TokenSerializer, UserSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
-from userds.models import MyUser
+from users.models import MyUser
 
 from users.forms import send_confirmation_code
 

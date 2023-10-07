@@ -1,9 +1,8 @@
 from django.urls import path
-from . import views
+from users.views import SignupView, TokenView, MyUsersMeView
 
 urlpatterns = [
-    path('signup/', views.SignupView, name='signup'), # вьюхи еще не готовы
-    path('token/', views.TokenView, name='token'),
-    path('me/', views.MyUsersMeView, name='me'),
-
+    path('signup/', SignupView, name='signup'),  # вьюхи еще не готовы
+    path('token/', TokenView, name='token'),
+    path('me/', MyUsersMeView, name='me'),
 ]
