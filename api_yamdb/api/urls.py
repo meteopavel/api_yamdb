@@ -14,4 +14,6 @@ v1_router.register('posts', PostViewSet, basename='posts')
 urlpatterns = [
     path('v1/', include(v1_router.urls)),
     path('v1/', include('djoser.urls.jwt')),
+    path('v1/auth/', include('users.urls', namespace='users')), # перенаправление на урлы юзера для реги и получения токена Альбина*
+    path('v1/users/', include('users.urls', namespace='users')), # перенаправление на урлы юзера для заполнения полей профиля Альбина*
 ]
