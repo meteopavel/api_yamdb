@@ -83,7 +83,7 @@ python manage.py runserver
 
 ### Получение списка всех произведений
 
->*GET* http://127.0.0.1:8000/api/v1/titles/
+>**GET** http://127.0.0.1:8000/api/v1/titles/
 
 ***Пример ответа:***
 ```json
