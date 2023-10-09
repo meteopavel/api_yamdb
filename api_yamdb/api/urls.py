@@ -3,7 +3,7 @@ from rest_framework import routers
 
 from api.views import ReviewViewSet, CommentViewSet
 from reviews.views import GenreViewSet, CategoryViewSet, TitleViewSet
-from users.views import MyUserViewSet
+from users.views import MyUserViewSet, MyUsersMeView
 
 
 v1_router = routers.DefaultRouter()
@@ -25,4 +25,5 @@ urlpatterns = [
     path('v1/', include(v1_router.urls)),
     path('v1/', include('djoser.urls.jwt')),
     path('v1/auth/', include('users.urls')),
+    path('v1/users/me/', MyUsersMeView.as_view(), name='me'),
 ]

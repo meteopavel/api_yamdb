@@ -3,6 +3,10 @@ from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import AccessToken
 from users.models import MyUser
 
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для модели MyUser."""
@@ -59,9 +63,24 @@ class SignUpSerializer(serializers.ModelSerializer):
 
         return value
 
+
     class Meta:
         model = MyUser
         fields = ('email', 'username')
+
+
+class UserMeSerializer(UserSerializer):
+    """Сериализация данных для эндпоинта users/me/."""
+
+    role = serializers.ChoiceField(choices=['user', 'moderator', 'admin'],
+                                   default='user')
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+
+    class Meta:
+        model = MyUser
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
 
 
 class TokenSerializer(serializers.Serializer):

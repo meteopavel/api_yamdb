@@ -1,6 +1,6 @@
 
 from api.permissions import IsAdminFullAccess
-from users.serializers import SignUpSerializer, TokenSerializer, UserSerializer
+from users.serializers import SignUpSerializer, TokenSerializer, UserSerializer, UserMeSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from users.models import MyUser
+from rest_framework.exceptions import ValidationError
 
 from users.forms import send_confirmation_code
 
@@ -40,11 +41,15 @@ class MyUsersMeView(APIView):
 
     def patch(self, request):
         me = get_object_or_404(MyUser, username=request.user.username)
-        serializer = SignUpSerializer(me, data=request.data, partial=True)
+        serializer = UserMeSerializer(me, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+        # Проверка длины last_name
+        last_name = serializer.validated_data.get('last_name')
+        if last_name and len(last_name) > 150:
+            raise ValidationError({'last_name': 'Фамилия не должна превышать 150 символов.'})
+
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class TokenView(TokenObtainPairView):
     """Вью для получения токена."""
