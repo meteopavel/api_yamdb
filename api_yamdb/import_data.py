@@ -1,30 +1,31 @@
-import os
 import csv
+import os
+
+import django
+import tablib
+
+from reviews.models import (
+    Category,
+    Comment,
+    Genre,
+    Review,
+    Title,
+)
+from reviews.resources import (
+    CategoryResource,
+    CommentResource,
+    GenreResource,
+    ReviewResource,
+    TitleResource,
+    UserResource,
+)
+from users.models import MyUser
 
 # Указываем Django где находятся настройки
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api_yamdb.settings")
 
 # Для инициализации Django
-import django
 django.setup()
-
-import tablib
-from users.models import MyUser
-from reviews.models import (
-    Category,
-    Title,
-    Genre,
-    Review,
-    Comment
-)
-from reviews.resources import(
-    UserResource,
-    TitleResource,
-    CategoryResource,
-    GenreResource,
-    ReviewResource,
-    CommentResource
-)
 
 PATH_TO_CSV_USERS = 'static/data/users.csv'
 PATH_TO_CSV_TITLE = 'static/data/titles.csv'
@@ -57,7 +58,10 @@ def import_genre_title_relation(filepath):
                 title = Title.objects.get(id=row['title_id'])
                 genre = Genre.objects.get(id=row['genre_id'])
                 title.genre.add(genre)
-                print(f'Жанр с ID {row["genre_id"]} успешно добавлен к произведению с ID {row["title_id"]}.')
+                print(
+                    f'Жанр с ID {row["genre_id"]} успешно добавлен к'
+                    f'произведению с ID {row["title_id"]}.'
+                )
 
             except Title.DoesNotExist:
                 print(f'Произведение с ID {row["title_id"]} не найдено.')
