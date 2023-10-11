@@ -72,6 +72,11 @@ class Title(models.Model):
         null=True
     )
 
+    def get_rating(self):
+    # Вычисляем средний рейтинг из всех отзывов произведения
+        average_score = self.reviews.aggregate(models.Avg('score'))['score__avg']
+        return average_score or 0.0
+
     def __str__(self):
         return self.name
 

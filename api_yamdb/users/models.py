@@ -42,6 +42,7 @@ class MyUser(AbstractUser):
     )
     email = models.EmailField(
         verbose_name='Электронная почта',
+        max_length=254,
         unique=True
     )
 
@@ -80,10 +81,3 @@ class MyUser(AbstractUser):
         ordering = ['id']
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-
-        constraints = [
-            models.UniqueConstraint(
-                fields=('username', 'email'),
-                name='unique_username_email'
-            )
-        ]

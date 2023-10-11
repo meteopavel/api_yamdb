@@ -1,3 +1,5 @@
+import re
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -45,7 +47,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         request = self.context['request']
         if request.method != 'POST':
             return data
-        title_id = self.context.get('view').kwargs.get('title_id')
+        title_id = self.context.get('view').kwargs.get('title_pk')
         title = get_object_or_404(Title, pk=title_id)
         if Review.objects.filter(title=title, author=request.user).exists():
             raise ValidationError('Должен быть только один отзыв.')
@@ -86,6 +88,7 @@ class TitleSerializer(serializers.ModelSerializer):
         slug_field='slug',
         queryset=Category.objects.all()
     )
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Title
@@ -95,8 +98,12 @@ class TitleSerializer(serializers.ModelSerializer):
             'year',
             'description',
             'genre',
-            'category'
+            'category',
+            'rating'
         ]
+
+    def get_rating(self, obj):
+        return obj.get_rating()
 
 
 class ReadOnlyTitleSerializer(serializers.ModelSerializer):
@@ -131,6 +138,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserEditSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        max_length=150
+    )
+    email = serializers.EmailField(
+        max_length=254
+    )
     class Meta:
         model = MyUser
         fields = (
@@ -148,17 +161,24 @@ class UserEditSerializer(serializers.ModelSerializer):
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
+        max_length=150,
         validators=[
             UniqueValidator(queryset=MyUser.objects.all())
         ]
     )
     email = serializers.EmailField(
+        max_length=254,
         validators=[
             UniqueValidator(queryset=MyUser.objects.all())
         ]
     )
 
     def validate_username(self, value):
+        if not re.match(r'^[\w.@+-]+\Z', value):
+            raise serializers.ValidationError(
+                'Имя пользователя должно соответствовать паттерну: ^[\w.@+-]+\Z'
+        )
+
         if value.lower() == 'me':
             raise serializers.ValidationError(
                 'Использование "me" в качестве имени пользователя запрещено.'

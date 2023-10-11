@@ -1,8 +1,11 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
@@ -11,8 +14,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from api.serializers import CommentSerializer, ReviewSerializer
 from reviews.mixins import ListCreateDestroyViewSet
 from reviews.models import Category, Genre, Review, Title
-from reviews.permissions import IsAdminOrReadOnly
-from .permissions import IsAdmin, IsAdminOrReadOnly
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsOwnerAdminOrModeratorOrReadOnly
 from .serializers import (
     CategorySerializer,
     GenreSerializer,
@@ -26,30 +28,43 @@ from .serializers import (
 from users.models import MyUser
 
 
-ALLOWED_METHODS = (
+ALLOWED_METHODS = [
     'get',
     'post',
     'patch',
     'delete'
-)
+]
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 10
 
 
 class CategoryViewSet(ListCreateDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
+    filter_backends = (SearchFilter,)
+    search_fields = ['name']
+    lookup_field = 'slug'
 
 
 class GenreViewSet(ListCreateDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrReadOnly,)
+    filter_backends = [SearchFilter]
+    search_fields = ['name']
+    lookup_field = 'slug'
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['genre__slug']
+    pagination_class = CustomPagination
 
     def get_serializer_class(self):
         if self.action in ('retrieve', 'list'):
@@ -60,8 +75,8 @@ class TitleViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (
-        permissions.IsAuthenticatedOrReadOnly,
-        IsAdminOrReadOnly,
+        IsAuthenticatedOrReadOnly,
+        IsOwnerAdminOrModeratorOrReadOnly
     )
     http_method_names = ALLOWED_METHODS
 
@@ -79,14 +94,13 @@ class CommentViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (
-        permissions.IsAuthenticatedOrReadOnly,
-        IsAdminOrReadOnly,
+        IsAuthenticatedOrReadOnly,
     )
     http_method_names = ALLOWED_METHODS
 
     @property
     def get_title(self):
-        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        return get_object_or_404(Title, pk=self.kwargs.get('title_pk'))
 
     def get_queryset(self):
         return self.get_title.reviews.select_related('author')
@@ -97,11 +111,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class AdminUserViewSet(ModelViewSet):
     lookup_field = 'username'
+    search_fields = ['username', 'email']
     queryset = MyUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = (
         IsAdmin,
     )
+    pagination_class = CustomPagination
+    http_method_names = ALLOWED_METHODS
 
 
 class RegisterViewSet(GenericViewSet):
@@ -110,13 +127,23 @@ class RegisterViewSet(GenericViewSet):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        user = get_object_or_404(
-            MyUser,
-            username=serializer.valid
-        )
+        username = request.data.get('username')
+        user_email = request.data.get('email')
+
+        # Проверяем, существует ли уже пользователь с таким именем
+        user = MyUser.objects.filter(username=username).first()
+
+        if not user:
+            # Если пользователь не найден, создаем нового
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
+        else:
+            # Если пользователь уже существует и его email не совпадает с предоставленным, возвращаем ошибку
+            if user.email != user_email:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # Создаем и отправляем код подтверждения
         confirmation_code = default_token_generator.make_token(user)
         send_mail(
             subject='Регистрация в YaMDb',
@@ -125,7 +152,8 @@ class RegisterViewSet(GenericViewSet):
             recipient_list=[user.email]
         )
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'username': username, 'email': user_email}, status=status.HTTP_200_OK)
+
 
 
 class UserProfileView(APIView):
