@@ -22,7 +22,7 @@ class MyUser(AbstractUser):
     ADMIN = 'admin'
     MODERATOR = 'moderator'
     USER = 'user'
-    
+
     ROLES = (
         (USER, 'Пользователь'),
         (MODERATOR, 'Модератор'),
@@ -45,12 +45,6 @@ class MyUser(AbstractUser):
         unique=True
     )
 
-    #confirmation_code = models.CharField(
-    #    verbose_name='Код подтверждения',
-    #    blank=True,
-    #    max_length=256
-    #)
-
     @property
     def is_admin(self):
         """
@@ -60,7 +54,6 @@ class MyUser(AbstractUser):
         Может создавать и удалять произведения, категории и жанры,
         а также назначать роли другим пользователям.
         """
-        #return self.role in [self.ADMIN, self.is_superuser]
         return self.role == self.ADMIN
 
     @property
@@ -71,15 +64,7 @@ class MyUser(AbstractUser):
         Модератор имеет все права аутентифицированного пользователя и,
         дополнительно, право удалять и редактировать любые отзывы и коммент.
         """
-        #return self.role in [self.MODERATOR, self.ADMIN, self.is_superuser]
         return self.role == self.MODERATOR
-
-    #User поставил по default в role
-    #@property
-    #def is_user(self):
-    #    """Проверка пользователя на наличие стандартных прав."""
-    #    return self.role in [self.USER]
-
 
     class Meta:
         """
@@ -92,7 +77,7 @@ class MyUser(AbstractUser):
         - ordering: Порядок сортировки записей модели.
         """
 
-        ordering =  ['id']
+        ordering = ['id']
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
