@@ -65,7 +65,8 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 class IsOwnerAdminOrModeratorOrReadOnly(permissions.BasePermission):
     """
-    Пользовательское разрешение, которое позволяет только владельцам объекта, администратору или модератору редактировать его.
+    Пользовательское разрешение, которое позволяет только владельцам объекта,
+    администратору или модератору редактировать его.
     """
 
     def has_object_permission(self, request, view, obj):
@@ -75,5 +76,5 @@ class IsOwnerAdminOrModeratorOrReadOnly(permissions.BasePermission):
         is_owner = obj.author == request.user
         is_admin = request.user.is_admin
         is_moderator = request.user.is_moderator
-        
+
         return is_owner or is_moderator or is_admin

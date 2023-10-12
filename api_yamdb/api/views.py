@@ -1,11 +1,16 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
@@ -14,7 +19,12 @@ from rest_framework_simplejwt.tokens import AccessToken
 from api.serializers import CommentSerializer, ReviewSerializer
 from reviews.mixins import ListCreateDestroyViewSet
 from reviews.models import Category, Genre, Review, Title
-from .permissions import IsAdmin, IsAdminOrReadOnly, IsOwnerAdminOrModeratorOrReadOnly
+from .filters import TitlesFilter
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsOwnerAdminOrModeratorOrReadOnly
+)
 from .serializers import (
     CategorySerializer,
     GenreSerializer,
@@ -59,15 +69,17 @@ class GenreViewSet(ListCreateDestroyViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(
+        Avg("reviews__score")
+    ).order_by("name")
     serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['genre__slug']
-    pagination_class = CustomPagination
+    filterset_class = TitlesFilter
+    http_method_names = ALLOWED_METHODS
 
     def get_serializer_class(self):
-        if self.action in ('retrieve', 'list'):
+        if self.action in ("retrieve", "list"):
             return ReadOnlyTitleSerializer
         return TitleSerializer
 
@@ -89,7 +101,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review)
-          
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
@@ -139,7 +151,6 @@ class RegisterViewSet(GenericViewSet):
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
         else:
-            # Если пользователь уже существует и его email не совпадает с предоставленным, возвращаем ошибку
             if user.email != user_email:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -152,8 +163,10 @@ class RegisterViewSet(GenericViewSet):
             recipient_list=[user.email]
         )
 
-        return Response({'username': username, 'email': user_email}, status=status.HTTP_200_OK)
-
+        return Response(
+            {'username': username, 'email': user_email},
+            status=status.HTTP_200_OK
+        )
 
 
 class UserProfileView(APIView):
