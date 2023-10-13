@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -37,12 +38,11 @@ class MyUser(AbstractUser):
     )
     bio = models.TextField(
         verbose_name='Биография',
-        null=True,
         blank=True
     )
     email = models.EmailField(
         verbose_name='Электронная почта',
-        max_length=254,
+        max_length=settings.MAX_STRING_LENGTH_254,
         unique=True
     )
 
@@ -55,7 +55,7 @@ class MyUser(AbstractUser):
         Может создавать и удалять произведения, категории и жанры,
         а также назначать роли другим пользователям.
         """
-        return self.role == self.ADMIN
+        return self.role == self.ADMIN or self.is_superuser or self.is_staff
 
     @property
     def is_moderator(self):
@@ -66,6 +66,10 @@ class MyUser(AbstractUser):
         дополнительно, право удалять и редактировать любые отзывы и коммент.
         """
         return self.role == self.MODERATOR
+    
+    @property
+    def is_admin_or_superuser_or_staff(self):
+        return self.role in (MyUser.ADMIN, MyUser.MODERATOR, MyUser.STAFF)
 
     class Meta:
         """
@@ -78,6 +82,6 @@ class MyUser(AbstractUser):
         - ordering: Порядок сортировки записей модели.
         """
 
-        ordering = ['id']
+        ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'

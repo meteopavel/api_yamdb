@@ -8,7 +8,7 @@ from reviews.models import Category, Comment, Genre, Review, Title
 from reviews.resources import (CategoryResource, CommentResource,
                                GenreResource, ReviewResource, TitleResource,
                                UserResource)
-from users.models import MyUser
+from users.models import User
 
 # Указываем Django где находятся настройки
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api_yamdb.settings")
@@ -59,7 +59,7 @@ def import_genre_title_relation(filepath):
                 print(f'Жанр с ID {row["genre_id"]} не найден.')
 
 
-import_data(MyUser, UserResource, PATH_TO_CSV_USERS)
+import_data(User, UserResource, PATH_TO_CSV_USERS)
 import_data(Category, CategoryResource, PATH_TO_CSV_CATEGORY)
 import_data(Title, TitleResource, PATH_TO_CSV_TITLE)
 import_data(Genre, GenreResource, PATH_TO_CSV_GENRE)

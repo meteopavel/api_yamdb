@@ -1,11 +1,11 @@
 import re
 
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
-
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import MyUser
 
@@ -157,13 +157,13 @@ class UserEditSerializer(serializers.ModelSerializer):
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
-        max_length=150,
+        max_length=settings.MAX_USERNAME_LENGTH_150,
         validators=[
             UniqueValidator(queryset=MyUser.objects.all())
         ]
     )
     email = serializers.EmailField(
-        max_length=254,
+        max_length=settings.MAX_STRING_LENGTH_254,
         validators=[
             UniqueValidator(queryset=MyUser.objects.all())
         ]
