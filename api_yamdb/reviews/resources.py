@@ -1,12 +1,7 @@
 from import_export import resources
+
 from users.models import MyUser
-from .models import (
-    Title,
-    Category,
-    Genre,
-    Review,
-    Comment
-)
+from reviews.models import Category, Comment, Genre, Review, Title
 
 
 class UserResource(resources.ModelResource):

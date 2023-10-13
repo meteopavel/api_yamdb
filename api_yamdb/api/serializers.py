@@ -139,12 +139,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserEditSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
-        max_length=150
-    )
-    email = serializers.EmailField(
-        max_length=254
-    )
 
     class Meta:
         model = MyUser

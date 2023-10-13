@@ -2,10 +2,8 @@ from http import HTTPStatus
 
 import pytest
 
-from tests.utils import (
-    check_name_and_slug_patterns, check_pagination, check_permissions,
-    create_categories
-)
+from tests.utils import (check_name_and_slug_patterns, check_pagination,
+                         check_permissions, create_categories)
 
 
 @pytest.mark.django_db(transaction=True)

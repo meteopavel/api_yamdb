@@ -4,21 +4,10 @@ import os
 import django
 import tablib
 
-from reviews.models import (
-    Category,
-    Comment,
-    Genre,
-    Review,
-    Title,
-)
-from reviews.resources import (
-    CategoryResource,
-    CommentResource,
-    GenreResource,
-    ReviewResource,
-    TitleResource,
-    UserResource,
-)
+from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.resources import (CategoryResource, CommentResource,
+                               GenreResource, ReviewResource, TitleResource,
+                               UserResource)
 from users.models import MyUser
 
 # Указываем Django где находятся настройки

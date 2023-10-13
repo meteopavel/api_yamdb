@@ -6,37 +6,24 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import (
-    AllowAny,
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly
-)
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
-from api.serializers import CommentSerializer, ReviewSerializer
 from reviews.mixins import ListCreateDestroyViewSet
 from reviews.models import Category, Genre, Review, Title
-from .filters import TitlesFilter
-from .permissions import (
-    IsAdmin,
-    IsAdminOrReadOnly,
-    IsOwnerAdminOrModeratorOrReadOnly
-)
-from .serializers import (
-    CategorySerializer,
-    GenreSerializer,
-    ReadOnlyTitleSerializer,
-    TitleSerializer,
-    TokenSerializer,
-    UserEditSerializer,
-    UserRegisterSerializer,
-    UserSerializer,
-)
 from users.models import MyUser
-
+from api.filters import TitlesFilter
+from api.permissions import (IsAdmin, IsAdminOrReadOnly,
+                             IsOwnerAdminOrModeratorOrReadOnly)
+from api.serializers import (CategorySerializer, GenreSerializer,
+                             CommentSerializer, ReviewSerializer,
+                             ReadOnlyTitleSerializer, TitleSerializer,
+                             TokenSerializer, UserEditSerializer,
+                             UserRegisterSerializer, UserSerializer)
 
 ALLOWED_METHODS = [
     'get',
@@ -107,6 +94,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
+        IsOwnerAdminOrModeratorOrReadOnly,
     )
     http_method_names = ALLOWED_METHODS
 
@@ -170,10 +158,10 @@ class RegisterViewSet(GenericViewSet):
 
 
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated,)
     serializer_class = UserEditSerializer
 
-    def get(self, request):
+    def get(self, request, format=None):
         user = request.user
         serializer = self.serializer_class(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -187,7 +175,7 @@ class UserProfileView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
 class TokenJWTViewSet(GenericViewSet):
