@@ -62,7 +62,7 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
-        verbose_name='Жанр'
+        verbose_name='Жанр',
     )
     category = models.ForeignKey(
         Category,
@@ -71,6 +71,11 @@ class Title(models.Model):
         related_name='titles',
         null=True
     )
+    rating = models.IntegerField(
+        verbose_name='Рейтинг',
+        null=True,
+        default=None
+    )
 
     def __str__(self):
         return self.name
@@ -78,6 +83,7 @@ class Title(models.Model):
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
+        ordering = ['name']
 
 
 class Review(models.Model):
@@ -93,20 +99,14 @@ class Review(models.Model):
         verbose_name='Автор',
     )
     score = models.PositiveSmallIntegerField(
-        'Рейтинг',
+        verbose_name='Рейтинг',
         validators=(
-            MinValueValidator(
-                1,
-                'Рейтинг не может быть ниже 1'
-            ),
-            MaxValueValidator(
-                10,
-                'Рейтинг не может быть выше 10'
-            )
+            MinValueValidator(1, 'Рейтинг не может быть ниже 1'),
+            MaxValueValidator(10, 'Рейтинг не может быть выше 10')
         )
     )
     pub_date = models.DateField(
-        'Дата публикации',
+        verbose_name='Дата публикации',
         auto_now_add=True,
         db_index=True
     )

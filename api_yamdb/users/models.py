@@ -19,20 +19,32 @@ class MyUser(AbstractUser):
     Роли определены в кортеже ROLES.
     """
 
-    USER = 'user'
-    MODERATOR = 'moderator'
     ADMIN = 'admin'
+    MODERATOR = 'moderator'
+    USER = 'user'
+
     ROLES = (
         (USER, 'Пользователь'),
         (MODERATOR, 'Модератор'),
         (ADMIN, 'Администратор'),
     )
 
-    role = models.CharField('Роль', max_length=20, blank=True)
-    bio = models.TextField('Биография', blank=True)
-    email = models.EmailField('Электронная почта', unique=True)
-    confirmation_code = models.CharField('Код подтверждения',
-                                         blank=True, max_length=256)
+    role = models.CharField(
+        verbose_name='Роль',
+        max_length=20,
+        choices=ROLES,
+        default=USER
+    )
+    bio = models.TextField(
+        verbose_name='Биография',
+        null=True,
+        blank=True
+    )
+    email = models.EmailField(
+        verbose_name='Электронная почта',
+        max_length=254,
+        unique=True
+    )
 
     @property
     def is_admin(self):
@@ -43,7 +55,7 @@ class MyUser(AbstractUser):
         Может создавать и удалять произведения, категории и жанры,
         а также назначать роли другим пользователям.
         """
-        return self.role in [self.ADMIN, self.is_superuser]
+        return self.role == self.ADMIN
 
     @property
     def is_moderator(self):
@@ -53,12 +65,7 @@ class MyUser(AbstractUser):
         Модератор имеет все права аутентифицированного пользователя и,
         дополнительно, право удалять и редактировать любые отзывы и коммент.
         """
-        return self.role in [self.MODERATOR, self.ADMIN, self.is_superuser]
-
-    @property
-    def is_user(self):
-        """Проверка пользователя на наличие стандартных прав."""
-        return self.role in [self.USER]
+        return self.role == self.MODERATOR
 
     class Meta:
         """
@@ -71,10 +78,6 @@ class MyUser(AbstractUser):
         - ordering: Порядок сортировки записей модели.
         """
 
-        constraints = [
-            models.UniqueConstraint(fields=('username', 'email'),
-                                    name='unique_username_email')
-        ]
+        ordering = ['id']
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ('username', )
