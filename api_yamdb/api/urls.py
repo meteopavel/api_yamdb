@@ -4,13 +4,13 @@ from rest_framework.routers import DefaultRouter
 from api.views import (
     AdminUserViewSet,
     CategoryViewSet,
+    CommentViewSet,
     GenreViewSet,
     RegisterViewSet,
+    ReviewViewSet,
     TitleViewSet,
     TokenJWTViewSet,
     UserProfileView,
-    CommentViewSet,
-    ReviewViewSet
 )
 
 v1_router = DefaultRouter()

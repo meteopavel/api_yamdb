@@ -7,6 +7,7 @@ from reviews.validators import validate_year
 
 User = get_user_model()
 
+
 class Category(models.Model):
     name = models.CharField(
         max_length=settings.MAX_STRING_LENGTH_256,

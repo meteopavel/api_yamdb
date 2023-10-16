@@ -66,7 +66,7 @@ class User(AbstractUser):
         дополнительно, право удалять и редактировать любые отзывы и коммент.
         """
         return self.role == self.MODERATOR
-    
+
     @property
     def is_admin_or_superuser_or_staff(self):
         return self.role in (User.ADMIN, User.MODERATOR, User.STAFF)
