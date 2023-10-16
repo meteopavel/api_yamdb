@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 from reviews.models import Category, Comment, Genre, Review, Title
-from users.models import MyUser
+from users.models import User
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -124,10 +124,10 @@ class ReadOnlyTitleSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели MyUser."""
+    """Сериализатор для модели User."""
 
     class Meta:
-        model = MyUser
+        model = User
         fields = (
             'username',
             'email',
@@ -141,7 +141,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserEditSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = MyUser
+        model = User
         fields = (
             'username',
             'email',
@@ -159,13 +159,13 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
         max_length=settings.MAX_USERNAME_LENGTH_150,
         validators=[
-            UniqueValidator(queryset=MyUser.objects.all())
+            UniqueValidator(queryset=User.objects.all())
         ]
     )
     email = serializers.EmailField(
         max_length=settings.MAX_STRING_LENGTH_254,
         validators=[
-            UniqueValidator(queryset=MyUser.objects.all())
+            UniqueValidator(queryset=User.objects.all())
         ]
     )
 
@@ -180,7 +180,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return value
 
     class Meta:
-        model = MyUser
+        model = User
         fields = (
             'username',
             'email'

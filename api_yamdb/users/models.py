@@ -3,9 +3,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class MyUser(AbstractUser):
+class User(AbstractUser):
     """
-    Кастомная модель пользователя MyUser.
+    Кастомная модель пользователя User.
 
     Поля:
     - role: Роль пользователя (Пользователь, Модератор, Администратор).
@@ -69,7 +69,7 @@ class MyUser(AbstractUser):
     
     @property
     def is_admin_or_superuser_or_staff(self):
-        return self.role in (MyUser.ADMIN, MyUser.MODERATOR, MyUser.STAFF)
+        return self.role in (User.ADMIN, User.MODERATOR, User.STAFF)
 
     class Meta:
         """

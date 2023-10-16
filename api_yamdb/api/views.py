@@ -15,15 +15,25 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.mixins import ListCreateDestroyViewSet
 from reviews.models import Category, Genre, Review, Title
-from users.models import MyUser
+from users.models import User
 from api.filters import TitlesFilter
-from api.permissions import (IsAdmin, IsAdminOrReadOnly,
-                             IsOwnerAdminOrModeratorOrReadOnly)
-from api.serializers import (CategorySerializer, GenreSerializer,
-                             CommentSerializer, ReviewSerializer,
-                             ReadOnlyTitleSerializer, TitleSerializer,
-                             TokenSerializer, UserEditSerializer,
-                             UserRegisterSerializer, UserSerializer)
+from api.permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsOwnerAdminOrModeratorOrReadOnly
+)
+from api.serializers import (
+    CategorySerializer,
+    GenreSerializer,
+    CommentSerializer,
+    ReviewSerializer,
+    ReadOnlyTitleSerializer,
+    TitleSerializer,
+    TokenSerializer,
+    UserEditSerializer,
+    UserRegisterSerializer,
+    UserSerializer
+)
 
 ALLOWED_METHODS = [
     'get',
@@ -112,7 +122,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class AdminUserViewSet(ModelViewSet):
     lookup_field = 'username'
     search_fields = ['username', 'email']
-    queryset = MyUser.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (
         IsAdmin,
@@ -122,7 +132,7 @@ class AdminUserViewSet(ModelViewSet):
 
 
 class RegisterViewSet(GenericViewSet):
-    queryset = MyUser.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserRegisterSerializer
     permission_classes = [AllowAny]
 
@@ -131,7 +141,7 @@ class RegisterViewSet(GenericViewSet):
         user_email = request.data.get('email')
 
         # Проверяем, существует ли уже пользователь с таким именем
-        user = MyUser.objects.filter(username=username).first()
+        user = User.objects.filter(username=username).first()
 
         if not user:
             # Если пользователь не найден, создаем нового
@@ -179,7 +189,7 @@ class UserProfileView(APIView):
 
 
 class TokenJWTViewSet(GenericViewSet):
-    queryset = MyUser.objects.all()
+    queryset = User.objects.all()
     serializer_class = TokenSerializer
     permission_classes = [AllowAny]
 
@@ -187,7 +197,7 @@ class TokenJWTViewSet(GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = get_object_or_404(
-            MyUser,
+            User,
             username=serializer.validated_data['username']
         )
 
