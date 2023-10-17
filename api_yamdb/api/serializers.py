@@ -51,7 +51,9 @@ class ReviewSerializer(serializers.ModelSerializer):
         title_id = self.context.get('view').kwargs.get('title_pk')
         title = get_object_or_404(Title, pk=title_id)
         if Review.objects.filter(title=title, author=request.user).exists():
-            raise ValidationError('Должен быть только один отзыв.')
+            raise ValidationError(
+                'Должен быть только один отзыв от подьзователя.'
+            )
         return data
 
     class Meta:
@@ -62,20 +64,20 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = [
+        fields = (
             'name',
             'slug'
-        ]
+        )
         lookup_field = 'slug'
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
-        fields = [
+        fields = (
             'name',
             'slug'
-        ]
+        )
         lookup_field = 'slug'
 
 
@@ -92,24 +94,27 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = [
+        fields = (
             'id',
             'name',
             'year',
             'description',
             'genre',
-            'category',
-            'rating'
-        ]
+            'category'
+        )
 
 
 class ReadOnlyTitleSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(
         source='reviews__score__avg',
+        read_only=True,
+        default=0
+    )
+    genre = GenreSerializer(
+        many=True,
         read_only=True
     )
-    genre = GenreSerializer(many=True)
-    category = CategorySerializer()
+    category = CategorySerializer(read_only=True)
 
     class Meta:
         model = Title
@@ -139,21 +144,11 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
-class UserEditSerializer(serializers.ModelSerializer):
+class UserEditSerializer(UserSerializer):
+    """Сериализатор для редактирования модели User."""
 
-    class Meta:
-        model = User
-        fields = (
-            'username',
-            'email',
-            'first_name',
-            'last_name',
-            'bio',
-            'role'
-        )
-        read_only_fields = (
-            'role',
-        )
+    class Meta(UserSerializer.Meta):
+        read_only_fields = ('role',)
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):

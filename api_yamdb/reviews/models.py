@@ -74,12 +74,6 @@ class Title(models.Model):
         null=True
     )
 
-    @property
-    def rating(self):
-        average_rating = self.reviews.aggregate(models.Avg('score'))
-        ['score__avg']
-        return average_rating or 0
-
     def __str__(self):
         return self.name
 

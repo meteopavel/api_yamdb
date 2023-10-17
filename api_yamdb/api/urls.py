@@ -29,11 +29,22 @@ v1_router.register(
     basename='comments',
 )
 v1_router.register('users', AdminUserViewSet, basename='users')
-v1_router.register('auth/signup', RegisterViewSet, basename='signup')
-v1_router.register('auth/token', TokenJWTViewSet, basename='get-jwt-token')
 
+auth_patterns = [
+    path(
+        'signup/',
+        RegisterViewSet.as_view({'post': 'create'}),
+        name='signup'
+    ),
+    path(
+        'token/',
+        TokenJWTViewSet.as_view({'post': 'create'}),
+        name='get-jwt-token'
+    )
+]
 
 urlpatterns = [
     path('v1/users/me/', UserProfileView.as_view(), name='user-profile'),
+    path('v1/auth/', include(auth_patterns)),
     path('v1/', include(v1_router.urls)),
 ]
