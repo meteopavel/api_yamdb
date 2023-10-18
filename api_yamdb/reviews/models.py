@@ -7,6 +7,7 @@ from reviews.validators import validate_year
 
 User = get_user_model()
 
+
 class Category(models.Model):
     name = models.CharField(
         max_length=settings.MAX_STRING_LENGTH_256,
@@ -72,12 +73,6 @@ class Title(models.Model):
         related_name='titles',
         null=True
     )
-
-    @property
-    def rating(self):
-        average_rating = self.reviews.aggregate(models.Avg('score'))
-        ['score__avg']
-        return average_rating or 0
 
     def __str__(self):
         return self.name

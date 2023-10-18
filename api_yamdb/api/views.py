@@ -3,51 +3,42 @@ from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.filters import SearchFilter
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
-from reviews.mixins import ListCreateDestroyViewSet
-from reviews.models import Category, Genre, Review, Title
-from users.models import User
-from api.filters import TitlesFilter
-from api.permissions import (
+from .mixins import BaseViewSet, CategoryGenreBaseViewSet
+from .filters import TitlesFilter
+from .permissions import (
     IsAdmin,
     IsAdminOrReadOnly,
     IsOwnerAdminOrModeratorOrReadOnly
 )
-from api.serializers import (
+from .serializers import (
     CategorySerializer,
-    GenreSerializer,
     CommentSerializer,
-    ReviewSerializer,
+    GenreSerializer,
     ReadOnlyTitleSerializer,
+    ReviewSerializer,
     TitleSerializer,
     TokenSerializer,
     UserEditSerializer,
     UserRegisterSerializer,
     UserSerializer
 )
-
-ALLOWED_METHODS = [
-    'get',
-    'post',
-    'patch',
-    'delete'
-]
+from reviews.models import Category, Genre, Review, Title
+from users.models import User
 
 
-class CustomPagination(PageNumberPagination):
-    page_size = 10
-
-
-class CategoryViewSet(ListCreateDestroyViewSet):
+class CategoryViewSet(CategoryGenreBaseViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
@@ -56,7 +47,7 @@ class CategoryViewSet(ListCreateDestroyViewSet):
     lookup_field = 'slug'
 
 
-class GenreViewSet(ListCreateDestroyViewSet):
+class GenreViewSet(CategoryGenreBaseViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrReadOnly,)
@@ -65,33 +56,35 @@ class GenreViewSet(ListCreateDestroyViewSet):
     lookup_field = 'slug'
 
 
-class TitleViewSet(viewsets.ModelViewSet):
+class TitleViewSet(BaseViewSet):
     queryset = Title.objects.all().annotate(
-        Avg("reviews__score")
-    ).order_by("name")
+        Avg('reviews__score')
+    ).order_by('name')
     serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = [DjangoFilterBackend]
     filterset_class = TitlesFilter
-    http_method_names = ALLOWED_METHODS
 
     def get_serializer_class(self):
-        if self.action in ("retrieve", "list"):
+        if self.action in ('retrieve', 'list'):
             return ReadOnlyTitleSerializer
         return TitleSerializer
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(BaseViewSet):
     serializer_class = CommentSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
         IsOwnerAdminOrModeratorOrReadOnly
     )
-    http_method_names = ALLOWED_METHODS
 
     @property
     def get_review(self):
-        return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+        return get_object_or_404(
+            Review,
+            pk=self.kwargs.get('review_id'),
+            title__id=self.kwargs.get('title_id')
+        )
 
     def get_queryset(self):
         return self.get_review.comments.select_related('author')
@@ -100,13 +93,12 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, review=self.get_review)
 
 
-class ReviewViewSet(viewsets.ModelViewSet):
+class ReviewViewSet(BaseViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
         IsOwnerAdminOrModeratorOrReadOnly,
     )
-    http_method_names = ALLOWED_METHODS
 
     @property
     def get_title(self):
@@ -119,7 +111,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title=self.get_title)
 
 
-class AdminUserViewSet(ModelViewSet):
+class AdminUserViewSet(BaseViewSet):
     lookup_field = 'username'
     search_fields = ['username', 'email']
     queryset = User.objects.all()
@@ -127,8 +119,6 @@ class AdminUserViewSet(ModelViewSet):
     permission_classes = (
         IsAdmin,
     )
-    pagination_class = CustomPagination
-    http_method_names = ALLOWED_METHODS
 
 
 class RegisterViewSet(GenericViewSet):
@@ -140,25 +130,43 @@ class RegisterViewSet(GenericViewSet):
         username = request.data.get('username')
         user_email = request.data.get('email')
 
-        # Проверяем, существует ли уже пользователь с таким именем
-        user = User.objects.filter(username=username).first()
+        # Получаем пользователя по email и username
+        user_by_email = User.objects.filter(email=user_email).first()
+        user_by_username = User.objects.filter(username=username).first()
 
-        if not user:
-            # Если пользователь не найден, создаем нового
+        # Проверяем результаты
+        if (user_by_email and user_by_username
+                and user_by_email != user_by_username):
+            return Response(
+                data={
+                    'detail': 'email и username не соответствуют одному user.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Если пользователь с таким именем не найден, создаем нового
+        if not user_by_username:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
         else:
-            if user.email != user_email:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+            if user_by_username.email != user_email:
+                return Response(
+                    data={
+                        'detail': 'Email не соответствует указанному username.'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         # Создаем и отправляем код подтверждения
-        confirmation_code = default_token_generator.make_token(user)
+        confirmation_code = default_token_generator.make_token(
+            user_by_username or user
+        )
         send_mail(
             subject='Регистрация в YaMDb',
             message=f'Ваш одноразовый код: {confirmation_code}',
             from_email=None,
-            recipient_list=[user.email]
+            recipient_list=[user_email]
         )
 
         return Response(
