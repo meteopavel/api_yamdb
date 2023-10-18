@@ -1,39 +1,27 @@
 from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import (
-    AllowAny,
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly
-)
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .mixins import BaseViewSet, CategoryGenreBaseViewSet
-from .filters import TitlesFilter
-from .permissions import (
-    IsAdmin,
-    IsAdminOrReadOnly,
-    IsOwnerAdminOrModeratorOrReadOnly
-)
-from .serializers import (
-    CategorySerializer,
-    CommentSerializer,
-    GenreSerializer,
-    ReadOnlyTitleSerializer,
-    ReviewSerializer,
-    TitleSerializer,
-    TokenSerializer,
-    UserEditSerializer,
-    UserRegisterSerializer,
-    UserSerializer
-)
+from api.mixins import BaseViewSet, CategoryGenreBaseViewSet
+from api.filters import TitlesFilter
+from api.permissions import (IsAdmin, IsAdminOrReadOnly,
+                             IsOwnerAdminOrModeratorOrReadOnly)
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, ReadOnlyTitleSerializer,
+                             ReviewSerializer, TitleSerializer,
+                             TokenSerializer, UserEditSerializer,
+                             UserRegisterSerializer, UserSerializer)
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
 
@@ -62,7 +50,7 @@ class TitleViewSet(BaseViewSet):
     ).order_by('name')
     serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = TitlesFilter
 
     def get_serializer_class(self):
@@ -113,12 +101,10 @@ class ReviewViewSet(BaseViewSet):
 
 class AdminUserViewSet(BaseViewSet):
     lookup_field = 'username'
-    search_fields = ['username', 'email']
+    search_fields = ('username', 'email')
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (
-        IsAdmin,
-    )
+    permission_classes = (IsAdmin,)
 
 
 class RegisterViewSet(GenericViewSet):
@@ -139,7 +125,7 @@ class RegisterViewSet(GenericViewSet):
                 and user_by_email != user_by_username):
             return Response(
                 data={
-                    'detail': 'email и username не соответствуют одному user.'
+                    'detail': 'email и username не совпадают ни с одним user.'
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -153,7 +139,7 @@ class RegisterViewSet(GenericViewSet):
             if user_by_username.email != user_email:
                 return Response(
                     data={
-                        'detail': 'Email не соответствует указанному username.'
+                        'detail': 'email не соответствует указанному username.'
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
@@ -165,8 +151,8 @@ class RegisterViewSet(GenericViewSet):
         send_mail(
             subject='Регистрация в YaMDb',
             message=f'Ваш одноразовый код: {confirmation_code}',
-            from_email=None,
-            recipient_list=[user_email]
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=(user_email,)
         )
 
         return Response(

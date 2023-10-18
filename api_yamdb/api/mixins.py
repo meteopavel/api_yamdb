@@ -5,12 +5,7 @@ from rest_framework.viewsets import ModelViewSet
 from api.permissions import IsAdminOrReadOnly
 
 
-ALLOWED_METHODS = (
-    'get',
-    'post',
-    'patch',
-    'delete'
-)
+ALLOWED_METHODS = ('get', 'post', 'patch', 'delete')
 
 
 class CategoryGenreBaseViewSet(
@@ -21,7 +16,7 @@ class CategoryGenreBaseViewSet(
 ):
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (SearchFilter,)
-    search_fields = ['name']
+    search_fields = ('name',)
     lookup_field = 'slug'
 
 
