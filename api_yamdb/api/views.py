@@ -5,11 +5,11 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -19,7 +19,7 @@ from api.permissions import (IsAdmin, IsAdminOrReadOnly,
                              IsOwnerAdminOrModeratorOrReadOnly)
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, ReadOnlyTitleSerializer,
-                             ReviewSerializer, TitleSerializer,
+                             ReviewSerializer, EditTitleSerializer,
                              TokenSerializer, UserEditSerializer,
                              UserRegisterSerializer, UserSerializer)
 from reviews.models import Category, Genre, Review, Title
@@ -48,7 +48,7 @@ class TitleViewSet(BaseViewSet):
     queryset = Title.objects.all().annotate(
         Avg('reviews__score')
     ).order_by('name')
-    serializer_class = TitleSerializer
+    serializer_class = EditTitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitlesFilter
@@ -56,7 +56,7 @@ class TitleViewSet(BaseViewSet):
     def get_serializer_class(self):
         if self.action in ('retrieve', 'list'):
             return ReadOnlyTitleSerializer
-        return TitleSerializer
+        return EditTitleSerializer
 
 
 class CommentViewSet(BaseViewSet):
@@ -106,11 +106,31 @@ class AdminUserViewSet(BaseViewSet):
     serializer_class = UserSerializer
     permission_classes = (IsAdmin,)
 
+    @action(detail=False,
+            methods=('get', 'patch',),
+            permission_classes=(IsAuthenticated,),
+            serializer_class=UserEditSerializer)
+    def me(self, request, format=None):
+        user = request.user
+        if request.method == 'PATCH':
+            serializer = self.serializer_class(
+                user,
+                data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.validated_data,
+                            status=status.HTTP_200_OK)
+        else:
+            serializer = self.serializer_class(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class RegisterViewSet(GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserRegisterSerializer
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
 
     def create(self, request, *args, **kwargs):
         username = request.data.get('username')
@@ -121,8 +141,7 @@ class RegisterViewSet(GenericViewSet):
         user_by_username = User.objects.filter(username=username).first()
 
         # Проверяем результаты
-        if (user_by_email and user_by_username
-                and user_by_email != user_by_username):
+        if (user_by_email != user_by_username):
             return Response(
                 data={
                     'detail': 'email и username не совпадают ни с одним user.'
@@ -132,9 +151,13 @@ class RegisterViewSet(GenericViewSet):
 
         # Если пользователь с таким именем не найден, создаем нового
         if not user_by_username:
+            # При попытке переместить строки 135-136 в 118, падают 2 теста.
+            # Нужна подсказка.
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            user = serializer.save()
+            user, created = User.objects.get_or_create(
+                email=serializer.validated_data.get('email'),
+                username=serializer.validated_data.get('username'))
         else:
             if user_by_username.email != user_email:
                 return Response(
@@ -156,36 +179,17 @@ class RegisterViewSet(GenericViewSet):
         )
 
         return Response(
+            # Здесь тоже если поставить данные сериализатора, падают тесты
+            # Нужна подсказка
             {'username': username, 'email': user_email},
             status=status.HTTP_200_OK
         )
 
 
-class UserProfileView(APIView):
-    permission_classes = (IsAuthenticated,)
-    serializer_class = UserEditSerializer
-
-    def get(self, request, format=None):
-        user = request.user
-        serializer = self.serializer_class(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def patch(self, request):
-        user = request.user
-        serializer = self.serializer_class(
-            user,
-            data=request.data,
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
-
-
 class TokenJWTViewSet(GenericViewSet):
     queryset = User.objects.all()
     serializer_class = TokenSerializer
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

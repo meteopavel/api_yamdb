@@ -1,11 +1,9 @@
 import re
 
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.validators import UniqueValidator
 
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
@@ -31,18 +29,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
-    score = serializers.IntegerField(
-        validators=(
-            MinValueValidator(
-                1,
-                'Рейтинг не может быть ниже 10'
-            ),
-            MaxValueValidator(
-                10,
-                'Рейтинг не может быть выше 10'
-            ),
-        )
-    )
 
     def validate(self, data):
         request = self.context['request']
@@ -52,7 +38,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         title = get_object_or_404(Title, pk=title_id)
         if Review.objects.filter(title=title, author=request.user).exists():
             raise ValidationError(
-                'Должен быть только один отзыв от подьзователя.'
+                'Должен быть только один отзыв от пользователя.'
             )
         return data
 
@@ -64,24 +50,18 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = (
-            'name',
-            'slug'
-        )
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
-        fields = (
-            'name',
-            'slug'
-        )
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
 
-class TitleSerializer(serializers.ModelSerializer):
+class EditTitleSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         slug_field='slug',
         many=True,
@@ -91,6 +71,9 @@ class TitleSerializer(serializers.ModelSerializer):
         slug_field='slug',
         queryset=Category.objects.all()
     )
+
+    def to_representation(self, instance):
+        return ReadOnlyTitleSerializer(instance).data
 
     class Meta:
         model = Title
@@ -151,23 +134,23 @@ class UserEditSerializer(UserSerializer):
         read_only_fields = ('role',)
 
 
-class UserRegisterSerializer(serializers.ModelSerializer):
+class UserRegisterSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length=settings.MAX_USERNAME_LENGTH_150,
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ]
     )
     email = serializers.EmailField(
         max_length=settings.MAX_STRING_LENGTH_254,
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ]
     )
 
+    # Не понимаю, как вынести функцию. Мозг кипит)
+    # Её надо отдельно куда-то? А как тогда аргументы передать?
+    # re.sub вроде реализовал. А по остальному нужна подсказка или пример
     def validate_username(self, value):
-        if not re.match(r'^[\w.@+-]+\Z', value):
-            raise serializers.ValidationError()
+        forbidden_characters = re.sub(r'^[\w.@+-]+\Z', '', value)
+        if not forbidden_characters == '':
+            raise serializers.ValidationError(
+                f'Использование символов {forbidden_characters} запрещено.'
+            )
 
         if value.lower() == 'me':
             raise serializers.ValidationError(
@@ -177,10 +160,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = (
-            'username',
-            'email'
-        )
+        fields = ('username', 'email')
 
 
 class TokenSerializer(serializers.Serializer):

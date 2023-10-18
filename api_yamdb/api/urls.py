@@ -1,17 +1,9 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api.views import (
-    AdminUserViewSet,
-    CategoryViewSet,
-    CommentViewSet,
-    GenreViewSet,
-    RegisterViewSet,
-    ReviewViewSet,
-    TitleViewSet,
-    TokenJWTViewSet,
-    UserProfileView,
-)
+from api.views import (AdminUserViewSet, CategoryViewSet, CommentViewSet,
+                       GenreViewSet, RegisterViewSet, ReviewViewSet,
+                       TitleViewSet, TokenJWTViewSet)
 
 v1_router = DefaultRouter()
 
@@ -44,7 +36,13 @@ auth_patterns = [
 ]
 
 urlpatterns = [
-    path('v1/users/me/', UserProfileView.as_view(), name='user-profile'),
+    path(
+        'v1/users/',
+        AdminUserViewSet.as_view({'get': 'list',
+                                  'patch': 'partial_update',
+                                  'post': 'create'}),
+        name='user-profile'
+    ),
     path('v1/auth/', include(auth_patterns)),
     path('v1/', include(v1_router.urls)),
 ]
