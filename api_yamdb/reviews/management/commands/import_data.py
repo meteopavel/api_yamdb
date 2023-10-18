@@ -13,6 +13,7 @@ PATH_TO_CSV_REVIEW = 'static/data/review.csv'
 PATH_TO_CSV_COMMENT = 'static/data/comments.csv'
 PATH_TO_CSV_GENRE_TITLE = 'static/data/genre_title.csv'
 
+
 class Command(BaseCommand):
     help = 'Импортирует данные из CSV файлов в базу данных'
 
@@ -25,11 +26,15 @@ class Command(BaseCommand):
                 if model == Title:
                     try:
                         category_id = int(row['category'])
-                        category_instance = Category.objects.get(id=category_id)
+                        category_instance = Category.objects.get(
+                            id=category_id
+                        )
                         row['category'] = category_instance
                     except Category.DoesNotExist:
                         self.stdout.write(self.style.ERROR(
-                            f'Категория с ID {category_id} не найдена. Пропуск записи.')
+                            f'Категория с ID {category_id} не найдена. 
+                            Пропуск записи.'
+                            )
                         )
                         continue
                     except ValueError:
@@ -37,7 +42,7 @@ class Command(BaseCommand):
                             f'Некорректный ID категории {row["category"]}. Пропуск записи.')
                         )
                         continue
-                
+
                 # Обработка автора для модели Review
                 elif model == Review:
                     try:
@@ -69,7 +74,7 @@ class Command(BaseCommand):
                             f'Некорректный ID пользователя {row["author"]}. Пропуск записи.')
                         )
                         continue
-            
+
                 instance = model(**row)
                 try:
                     instance.save()
