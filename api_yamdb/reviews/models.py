@@ -10,12 +10,12 @@ User = get_user_model()
 
 class Category(models.Model):
     name = models.CharField(
-        max_length=settings.MAX_STRING_LENGTH_256,
+        max_length=settings.MAX_STRING_LENGTH,
         unique=True,
         verbose_name='Название категории'
     )
     slug = models.SlugField(
-        max_length=settings.MAX_SLUG_LENGTH_50,
+        max_length=settings.MAX_SLUG_LENGTH,
         unique=True,
         verbose_name='Slug категории'
     )
@@ -31,11 +31,11 @@ class Category(models.Model):
 
 class Genre(models.Model):
     name = models.CharField(
-        max_length=settings.MAX_STRING_LENGTH_256,
+        max_length=settings.MAX_STRING_LENGTH,
         verbose_name='Название жанра'
     )
     slug = models.SlugField(
-        max_length=settings.MAX_SLUG_LENGTH_50,
+        max_length=settings.MAX_SLUG_LENGTH,
         unique=True,
         verbose_name='Slug жанра'
     )
@@ -51,7 +51,7 @@ class Genre(models.Model):
 
 class Title(models.Model):
     name = models.CharField(
-        max_length=settings.MAX_STRING_LENGTH_256,
+        max_length=settings.MAX_STRING_LENGTH,
         verbose_name='Название произведения'
     )
     year = models.PositiveSmallIntegerField(
@@ -131,7 +131,7 @@ class Comment(models.Model):
         verbose_name='Отзыв',
     )
     text = models.CharField(
-        'Текст комментария', max_length=settings.MAX_STRING_LENGTH_256
+        'Текст комментария', max_length=settings.MAX_STRING_LENGTH
     )
     author = models.ForeignKey(
         User,

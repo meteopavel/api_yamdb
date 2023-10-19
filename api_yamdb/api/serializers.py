@@ -1,30 +1,24 @@
-import re
-
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from reviews.models import Category, Comment, Genre, Review, Title
+from users.validators import validate_username
 from users.models import User
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    review = serializers.SlugRelatedField(slug_field='text', read_only=True)
     author = serializers.SlugRelatedField(
         slug_field='username', read_only=True
     )
 
     class Meta:
-        fields = '__all__'
+        exclude = ('review',)
         model = Comment
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    title = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True
-    )
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
@@ -43,7 +37,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         return data
 
     class Meta:
-        fields = '__all__'
+        exclude = ('title',)
         model = Review
 
 
@@ -89,9 +83,8 @@ class EditTitleSerializer(serializers.ModelSerializer):
 
 class ReadOnlyTitleSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(
-        source='reviews__score__avg',
         read_only=True,
-        default=0
+        default=None
     )
     genre = GenreSerializer(
         many=True,
@@ -136,27 +129,13 @@ class UserEditSerializer(UserSerializer):
 
 class UserRegisterSerializer(serializers.Serializer):
     username = serializers.CharField(
-        max_length=settings.MAX_USERNAME_LENGTH_150,
+        max_length=settings.MAX_USERNAME_LENGTH,
+        validators=(validate_username,)
     )
     email = serializers.EmailField(
-        max_length=settings.MAX_STRING_LENGTH_254,
+        max_length=settings.MAX_EMAIL_LENGTH,
+        validators=(validate_username,)
     )
-
-    # Не понимаю, как вынести функцию. Мозг кипит)
-    # Её надо отдельно куда-то? А как тогда аргументы передать?
-    # re.sub вроде реализовал. А по остальному нужна подсказка или пример
-    def validate_username(self, value):
-        forbidden_characters = re.sub(r'^[\w.@+-]+\Z', '', value)
-        if not forbidden_characters == '':
-            raise serializers.ValidationError(
-                f'Использование символов {forbidden_characters} запрещено.'
-            )
-
-        if value.lower() == 'me':
-            raise serializers.ValidationError(
-                'Использование "me" в качестве имени пользователя запрещено.'
-            )
-        return value
 
     class Meta:
         model = User

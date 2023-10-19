@@ -21,6 +21,11 @@ v1_router.register(
     basename='comments',
 )
 v1_router.register('users', AdminUserViewSet, basename='users')
+v1_router.register(
+    'users/me/',
+    AdminUserViewSet,
+    basename='user-profile'
+)
 
 auth_patterns = [
     path(
@@ -36,13 +41,6 @@ auth_patterns = [
 ]
 
 urlpatterns = [
-    path(
-        'v1/users/',
-        AdminUserViewSet.as_view({'get': 'list',
-                                  'patch': 'partial_update',
-                                  'post': 'create'}),
-        name='user-profile'
-    ),
     path('v1/auth/', include(auth_patterns)),
     path('v1/', include(v1_router.urls)),
 ]

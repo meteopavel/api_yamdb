@@ -22,9 +22,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api.apps.ApiConfig',
     'reviews.apps.ReviewsConfig',
     'users.apps.UsersConfig',
+    'api.apps.ApiConfig',
     'rest_framework',
     'djoser',
     'import_export',
@@ -139,8 +139,9 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 
-MAX_STRING_LENGTH_256 = 256
-MAX_STRING_LENGTH_254 = 254
-MAX_SLUG_LENGTH_50 = 50
-MAX_USERNAME_LENGTH_150 = 150
+MAX_STRING_LENGTH = 256
+MAX_EMAIL_LENGTH = 254
+MAX_ROLE_LENGHT = 20
+MAX_SLUG_LENGTH = 50
+MAX_USERNAME_LENGTH = 150
 DEFAULT_FROM_EMAIL = 'confirm@apiyamdb.com'

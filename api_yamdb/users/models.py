@@ -2,6 +2,8 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from users.validators import validate_username
+
 
 class User(AbstractUser):
     """
@@ -30,9 +32,16 @@ class User(AbstractUser):
         (ADMIN, 'Администратор'),
     )
 
+    username = models.CharField(
+        verbose_name='Имя пользователя',
+        max_length=settings.MAX_USERNAME_LENGTH,
+        unique=True,
+        validators=(validate_username,)
+    )
+
     role = models.CharField(
         verbose_name='Роль',
-        max_length=20,
+        max_length=settings.MAX_ROLE_LENGHT,
         choices=ROLES,
         default=USER
     )
@@ -42,7 +51,7 @@ class User(AbstractUser):
     )
     email = models.EmailField(
         verbose_name='Электронная почта',
-        max_length=settings.MAX_STRING_LENGTH_254,
+        max_length=settings.MAX_EMAIL_LENGTH,
         unique=True
     )
 

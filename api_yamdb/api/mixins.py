@@ -20,7 +20,7 @@ class CategoryGenreBaseViewSet(
     lookup_field = 'slug'
 
 
-class BaseViewSet(ModelViewSet):
+class GetPostPatchDeleteBaseViewSet(ModelViewSet):
     """
     Базовый вьюсет, который ограничивает доступные методы
     """

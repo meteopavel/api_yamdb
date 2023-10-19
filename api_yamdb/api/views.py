@@ -6,14 +6,14 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
-from api.mixins import BaseViewSet, CategoryGenreBaseViewSet
+from api.mixins import (GetPostPatchDeleteBaseViewSet,
+                        CategoryGenreBaseViewSet)
 from api.filters import TitlesFilter
 from api.permissions import (IsAdmin, IsAdminOrReadOnly,
                              IsOwnerAdminOrModeratorOrReadOnly)
@@ -29,24 +29,16 @@ from users.models import User
 class CategoryViewSet(CategoryGenreBaseViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (SearchFilter,)
-    search_fields = ['name']
-    lookup_field = 'slug'
 
 
 class GenreViewSet(CategoryGenreBaseViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = [SearchFilter]
-    search_fields = ['name']
-    lookup_field = 'slug'
 
 
-class TitleViewSet(BaseViewSet):
+class TitleViewSet(GetPostPatchDeleteBaseViewSet):
     queryset = Title.objects.all().annotate(
-        Avg('reviews__score')
+        rating=Avg('reviews__score')
     ).order_by('name')
     serializer_class = EditTitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
@@ -59,7 +51,7 @@ class TitleViewSet(BaseViewSet):
         return EditTitleSerializer
 
 
-class CommentViewSet(BaseViewSet):
+class CommentViewSet(GetPostPatchDeleteBaseViewSet):
     serializer_class = CommentSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
@@ -81,7 +73,7 @@ class CommentViewSet(BaseViewSet):
         serializer.save(author=self.request.user, review=self.get_review)
 
 
-class ReviewViewSet(BaseViewSet):
+class ReviewViewSet(GetPostPatchDeleteBaseViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
@@ -99,7 +91,7 @@ class ReviewViewSet(BaseViewSet):
         serializer.save(author=self.request.user, title=self.get_title)
 
 
-class AdminUserViewSet(BaseViewSet):
+class AdminUserViewSet(GetPostPatchDeleteBaseViewSet):
     lookup_field = 'username'
     search_fields = ('username', 'email')
     queryset = User.objects.all()
@@ -122,9 +114,8 @@ class AdminUserViewSet(BaseViewSet):
             serializer.save()
             return Response(serializer.validated_data,
                             status=status.HTTP_200_OK)
-        else:
-            serializer = self.serializer_class(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = self.serializer_class(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RegisterViewSet(GenericViewSet):
@@ -135,6 +126,8 @@ class RegisterViewSet(GenericViewSet):
     def create(self, request, *args, **kwargs):
         username = request.data.get('username')
         user_email = request.data.get('email')
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         # Получаем пользователя по email и username
         user_by_email = User.objects.filter(email=user_email).first()
@@ -149,23 +142,9 @@ class RegisterViewSet(GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Если пользователь с таким именем не найден, создаем нового
-        if not user_by_username:
-            # При попытке переместить строки 135-136 в 118, падают 2 теста.
-            # Нужна подсказка.
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            user, created = User.objects.get_or_create(
-                email=serializer.validated_data.get('email'),
-                username=serializer.validated_data.get('username'))
-        else:
-            if user_by_username.email != user_email:
-                return Response(
-                    data={
-                        'detail': 'email не соответствует указанному username.'
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        user, created = User.objects.get_or_create(
+            email=user_email,
+            username=username)
 
         # Создаем и отправляем код подтверждения
         confirmation_code = default_token_generator.make_token(
@@ -179,9 +158,7 @@ class RegisterViewSet(GenericViewSet):
         )
 
         return Response(
-            # Здесь тоже если поставить данные сериализатора, падают тесты
-            # Нужна подсказка
-            {'username': username, 'email': user_email},
+            serializer.data,
             status=status.HTTP_200_OK
         )
 
