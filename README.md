@@ -194,7 +194,7 @@ python manage.py runserver
 
 А также реализовал импорт данных из csv-файла.
 
-[Павел Найденов](https://github.com/traneid)
+[Павел Найденов](https://github.com/meteopavel)
 
 Описал модели, view и эндпоинты для:
 * отзывов,
